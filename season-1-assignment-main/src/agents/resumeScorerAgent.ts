@@ -16,7 +16,7 @@
  * Does NOT touch Agents 1, 2, 3, 5-9.
  */
 
-import Groq from 'groq-sdk';
+import { get_groq_client, LARGE_MODEL } from '../lib/groq';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import type { Application } from './applicationIngestorAgent';
@@ -64,14 +64,7 @@ export interface JDForScoring {
   experience_level?: string;
 }
 
-// ─── Groq Client ──────────────────────────────────────────────────────────────
-
-const groqClient = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '',
-  dangerouslyAllowBrowser: true,
-});
-
-const MODEL = 'llama-3.3-70b-versatile';
+// Shared Groq client and model config
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -190,14 +183,16 @@ export async function runResumeScorerAgent(
       .filter(Boolean)
       .join('\n');
 
-    const response = await groqClient.chat.completions.create({
-      model: MODEL,
+    const client = get_groq_client();
+    const response = await client.chat.completions.create({
+      model: LARGE_MODEL,
       temperature: 0.1,
       max_tokens: 1200,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
+      response_format: { type: 'json_object' },
     });
 
     raw = response.choices[0]?.message?.content?.trim() ?? '';

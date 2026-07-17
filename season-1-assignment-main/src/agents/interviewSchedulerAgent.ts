@@ -10,7 +10,7 @@
  *   - Update application status="interview_scheduled"
  */
 
-import Groq from 'groq-sdk';
+import { get_groq_client, SMALL_MODEL } from '../lib/groq';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import { sendGmail } from '../lib/gmail';
@@ -27,12 +27,7 @@ export interface Agent7Result {
   error?: string;
 }
 
-const groqClient = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '',
-  dangerouslyAllowBrowser: true,
-});
-
-const MODEL = 'llama-3.3-70b-versatile';
+// Shared Groq client and model config
 
 function stripMarkdownFences(text: string): string {
   return text
@@ -76,14 +71,16 @@ export async function runInterviewSchedulerAgent(
 ): Promise<InviteEmailOutput> {
   const userPrompt = `Candidate Name: ${candidateName}\nJob Title: ${jobTitle}\nScheduled Interview Time: ${scheduledTimeStr}\nHR Recruiter Name: ${hrName}`;
 
-  const response = await groqClient.chat.completions.create({
-    model: MODEL,
+  const client = get_groq_client();
+  const response = await client.chat.completions.create({
+    model: SMALL_MODEL,
     temperature: 0.3,
     max_tokens: 800,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
+    response_format: { type: 'json_object' },
   });
 
   const raw = response.choices[0]?.message?.content?.trim() ?? '';

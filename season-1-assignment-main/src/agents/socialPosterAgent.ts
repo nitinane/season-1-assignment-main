@@ -8,7 +8,7 @@
  *   - Save draft to job_roles row (social_draft column)
  */
 
-import Groq from 'groq-sdk';
+import { get_groq_client, SMALL_MODEL } from '../lib/groq';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import { notify_hr } from '../services/notificationService';
@@ -24,12 +24,7 @@ export interface Agent2Result {
   error?: string;
 }
 
-const groqClient = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '',
-  dangerouslyAllowBrowser: true,
-});
-
-const MODEL = 'llama-3.3-70b-versatile';
+// Shared Groq client and model config
 
 function stripMarkdownFences(text: string): string {
   return text
@@ -79,14 +74,16 @@ Required Skills: ${requiredSkills.join(', ')}
 Preferred Tools: ${preferredTools.join(', ')}
 Job Description: ${description}`;
 
-  const response = await groqClient.chat.completions.create({
-    model: MODEL,
+  const client = get_groq_client();
+  const response = await client.chat.completions.create({
+    model: SMALL_MODEL,
     temperature: 0.7,
     max_tokens: 1000,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
+    response_format: { type: 'json_object' },
   });
 
   const raw = response.choices[0]?.message?.content?.trim() ?? '';

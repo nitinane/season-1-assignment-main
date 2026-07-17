@@ -7,10 +7,65 @@ const normalizeList = (value: string[] | string | null | undefined): string[] =>
   return value.split(',').map(item => item.trim()).filter(Boolean);
 };
 
-const groqClient = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '',
-  dangerouslyAllowBrowser: true,
+// Get pool of keys from environment variables
+const apiKeysStr = import.meta.env.VITE_GROQ_API_KEYS || import.meta.env.GROQ_API_KEYS || '';
+const apiKeys = apiKeysStr.split(',').map((key: string) => key.trim()).filter(Boolean);
+
+// Fallback to single key if pool is empty
+const singleKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '';
+const finalPool = apiKeys.length > 0 ? apiKeys : (singleKey ? [singleKey] : []);
+
+let keyIndex = 0;
+
+/**
+ * Shared utility function that round-robins through the key pool on each call
+ * and retries once with the next key on 429 rate limit errors.
+ */
+export function get_groq_client(): Groq {
+  if (finalPool.length === 0) {
+    throw new Error('Groq API Key(s) missing. Please set VITE_GROQ_API_KEYS or VITE_GROQ_API_KEY in your environment.');
+  }
+
+  const getNextClient = () => {
+    const key = finalPool[keyIndex];
+    keyIndex = (keyIndex + 1) % finalPool.length;
+    return new Groq({
+      apiKey: key,
+      dangerouslyAllowBrowser: true,
+    });
+  };
+
+  const client = getNextClient();
+  const originalCreate = client.chat.completions.create.bind(client.chat.completions);
+
+  client.chat.completions.create = async function (params: any, options?: any) {
+    try {
+      return await originalCreate(params, options);
+    } catch (error: any) {
+      const isRateLimit = error?.status === 429 || error?.message?.toLowerCase().includes('rate_limit') || error?.message?.includes('429');
+      if (isRateLimit && finalPool.length > 1) {
+        console.warn('[Groq Client] Rate limit (429) hit. Retrying once with the next key in the pool…');
+        const nextClient = getNextClient();
+        return await nextClient.chat.completions.create(params, options);
+      }
+      throw error;
+    }
+  } as any;
+
+  return client;
+}
+
+// Proxy wrapper for backward compatibility within groq.ts
+const groqClient = new Proxy({} as Groq, {
+  get(_target, prop) {
+    return Reflect.get(get_groq_client(), prop);
+  }
 });
+
+// Model Constants
+export const LARGE_MODEL = 'llama-3.3-70b-versatile';
+export const SMALL_MODEL = 'llama-3.1-8b-instant';
+
 
 import { getBenchmarksForRole } from '../services/aiRankingService';
 

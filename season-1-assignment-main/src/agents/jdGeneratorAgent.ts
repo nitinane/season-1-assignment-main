@@ -10,7 +10,7 @@
  * Temp  : 0.3
  */
 
-import Groq from 'groq-sdk';
+import { get_groq_client, LARGE_MODEL } from '../lib/groq';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,14 +35,7 @@ export interface AgentFailure {
 
 export type AgentResult = AgentSuccess | AgentFailure;
 
-// ─── Groq Client ──────────────────────────────────────────────────────────────
-
-const groqClient = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '',
-  dangerouslyAllowBrowser: true,
-});
-
-const MODEL = 'llama-3.3-70b-versatile';
+// Shared Groq client and model config
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,8 +123,9 @@ export async function runJDGeneratorAgent(hrNotes: string): Promise<AgentResult>
       throw new Error('Input hrNotes cannot be empty');
     }
 
-    const response = await groqClient.chat.completions.create({
-      model: MODEL,
+    const client = get_groq_client();
+    const response = await client.chat.completions.create({
+      model: LARGE_MODEL,
       temperature: 0.3,
       max_tokens: 1500,
       messages: [
@@ -141,6 +135,7 @@ export async function runJDGeneratorAgent(hrNotes: string): Promise<AgentResult>
           content: `HR Notes:\n${hrNotes.trim()}`,
         },
       ],
+      response_format: { type: 'json_object' },
     });
 
     raw = response.choices[0]?.message?.content?.trim() ?? '';
