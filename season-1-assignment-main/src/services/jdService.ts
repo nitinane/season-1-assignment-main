@@ -23,6 +23,7 @@ import { runJDGeneratorAgent } from '../agents/jdGeneratorAgent';
 import type { JDOutput, AgentResult } from '../agents/jdGeneratorAgent';
 import type { JobRole } from '../types';
 import { notify_hr } from './notificationService';
+import { generateAndSaveSocialDraft } from '../agents/socialPosterAgent';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -91,6 +92,9 @@ export async function generateAndSaveJD(hrNotes: string): Promise<SavedJD> {
       'jd_created',
       `Job description created: "${savedJob.title}" (Experience Level: ${savedJob.experience_level || 'N/A'})`
     ).catch(console.error);
+
+    // Automatically generate the social media post draft (Agent 2)
+    generateAndSaveSocialDraft(savedJob.id).catch(console.error);
 
     return { agentResult, savedJob };
   } catch (dbError) {

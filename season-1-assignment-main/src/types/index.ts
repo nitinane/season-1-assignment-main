@@ -20,6 +20,7 @@ export interface JobRole {
   status: string;
   candidate_count?: number;
   shortlisted_count?: number;
+  social_draft?: { post_copy: string; image_prompt: string } | null;
   created_at: string;
 }
 

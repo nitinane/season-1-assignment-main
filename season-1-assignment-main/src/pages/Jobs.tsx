@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Briefcase, X, ChevronRight, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Briefcase, X, ChevronRight, Loader2, Sparkles, CheckCircle2, AlertCircle, Share2, Copy, Check } from 'lucide-react';
 import { generateAndSaveJD } from '../services/jdService';
+import { generateAndSaveSocialDraft } from '../agents/socialPosterAgent';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useJobStore } from '../store/jobStore';
@@ -317,6 +318,48 @@ export default function Jobs() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Agent 2 Social Poster State
+  const [selectedJobForDraft, setSelectedJobForDraft] = useState<JobRole | null>(null);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [copiedPost, setCopiedPost] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  const handleGenerateSocialDraft = async (jobId: string) => {
+    setGeneratingDraft(true);
+    try {
+      const res = await generateAndSaveSocialDraft(jobId);
+      if (res.success && res.draft) {
+        toast.success('Social media draft created!');
+        // Update local jobs list
+        setJobs(jobs.map(j => j.id === jobId ? { ...j, social_draft: res.draft } : j));
+        // Update selected job draft state
+        if (selectedJobForDraft && selectedJobForDraft.id === jobId) {
+          setSelectedJobForDraft({ ...selectedJobForDraft, social_draft: res.draft });
+        }
+      } else {
+        toast.error(`Drafting failed: ${res.error}`);
+      }
+    } catch (e: any) {
+      toast.error(`Error: ${e.message}`);
+    } finally {
+      setGeneratingDraft(false);
+    }
+  };
+
+  const handleCopyPost = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPost(true);
+    toast.success('LinkedIn post copy copied!');
+    setTimeout(() => setCopiedPost(false), 2000);
+  };
+
+  const handleCopyPrompt = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPrompt(true);
+    toast.success('Image prompt copied!');
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
+
   useEffect(() => {
     const load = async () => {
       if (!user) return;
@@ -414,7 +457,19 @@ export default function Jobs() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 border border-brand-500/20">
                   <Briefcase className="h-5 w-5 text-brand-400" />
                 </div>
-                <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-brand-400 transition-colors" />
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedJobForDraft(job);
+                    }}
+                    title="View Social Post Draft"
+                    className="p-1.5 rounded-lg border border-white/5 bg-white/3 text-white/40 hover:text-brand-300 hover:border-brand-500/35 transition-all"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                  </button>
+                  <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-brand-400 transition-colors" />
+                </div>
               </div>
               <h3 className="font-semibold text-white text-sm">{job.title}</h3>
               <p className="text-xs text-white/40 mt-0.5 mb-3">{job.experience_level}</p>
@@ -434,6 +489,92 @@ export default function Jobs() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Agent 2 Social Draft Modal */}
+      {selectedJobForDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d0d1e] p-6 shadow-2xl animate-scale-up space-y-5 text-xs">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="flex items-center gap-2">
+                <Share2 className="h-4.5 w-4.5 text-brand-400" />
+                <h3 className="text-sm font-bold text-white">Social Media Post Draft — {selectedJobForDraft.title}</h3>
+              </div>
+              <button
+                onClick={() => { setSelectedJobForDraft(null); setCopiedPost(false); setCopiedPrompt(false); }}
+                className="rounded-lg p-1 text-white/40 hover:bg-white/5 hover:text-white transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {selectedJobForDraft.social_draft ? (
+              <div className="space-y-4">
+                {/* Post Copy Box */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-white/40">LinkedIn Post Copy</span>
+                    <button
+                      onClick={() => handleCopyPost(selectedJobForDraft.social_draft!.post_copy)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-white/3 text-[11px] font-medium text-brand-300 hover:bg-brand-500/10 transition-all"
+                    >
+                      {copiedPost ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copiedPost ? 'Copied' : 'Copy Post'}
+                    </button>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/2 p-4 font-sans text-white/70 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                    {selectedJobForDraft.social_draft.post_copy}
+                  </div>
+                </div>
+
+                {/* Image Prompt Box */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-white/40">Suggested Image Prompt (AI Visual)</span>
+                    <button
+                      onClick={() => handleCopyPrompt(selectedJobForDraft.social_draft!.image_prompt)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-white/3 text-[11px] font-medium text-brand-300 hover:bg-brand-500/10 transition-all"
+                    >
+                      {copiedPrompt ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copiedPrompt ? 'Copied' : 'Copy Prompt'}
+                    </button>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/2 p-4 font-mono text-[11px] text-white/50 leading-relaxed whitespace-pre-wrap">
+                    {selectedJobForDraft.social_draft.image_prompt}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                <Sparkles className="h-8 w-8 text-white/20 animate-pulse" />
+                <div>
+                  <h4 className="text-white/70 font-semibold">No Social Draft generated yet</h4>
+                  <p className="text-white/30 max-w-sm mt-1">This job role doesn't have an active social media recruitment post draft.</p>
+                </div>
+                <button
+                  onClick={() => handleGenerateSocialDraft(selectedJobForDraft.id)}
+                  disabled={generatingDraft}
+                  className="btn-primary h-9 px-4 text-xs flex items-center gap-1.5"
+                >
+                  {generatingDraft ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {generatingDraft ? 'Generating Draft…' : 'Generate Social Draft with AI'}
+                </button>
+              </div>
+            )}
+            
+            {/* Footer */}
+            <div className="border-t border-white/5 pt-4 text-right">
+              <button
+                onClick={() => { setSelectedJobForDraft(null); setCopiedPost(false); setCopiedPrompt(false); }}
+                className="btn-secondary px-4 h-9 text-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
