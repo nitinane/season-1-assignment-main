@@ -20,6 +20,9 @@ import Groq from 'groq-sdk';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import type { Application } from './applicationIngestorAgent';
+import { notifyShortlistedCandidate } from './shortlistNotifierAgent';
+import { generateInterviewQuestionsForApplication } from './questionGeneratorAgent';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -305,6 +308,23 @@ export async function scoreApplication(applicationId: string): Promise<ScorerRes
 
     // 4. Update the DB row
     await updateApplicationScore(applicationId, agentResult.data);
+
+    // 5. Trigger Post-Scoring Pipeline (Agent 5 + Agent 6) if score >= 70
+    if (agentResult.data.match_score >= 70) {
+      try {
+        console.log(`[Score Pipeline] Score is ${agentResult.data.match_score} >= 70. Triggering shortlist notifier (Agent 5)…`);
+        await notifyShortlistedCandidate(applicationId);
+      } catch (err) {
+        console.error("[Score Pipeline] Shortlist notifier failed:", err);
+      }
+
+      try {
+        console.log(`[Score Pipeline] Score is ${agentResult.data.match_score} >= 70. Triggering question generator (Agent 6)…`);
+        await generateInterviewQuestionsForApplication(applicationId);
+      } catch (err) {
+        console.error("[Score Pipeline] Question generator failed:", err);
+      }
+    }
 
     return { success: true, data: agentResult.data, applicationId };
   } catch (e) {

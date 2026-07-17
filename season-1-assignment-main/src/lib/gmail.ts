@@ -257,3 +257,43 @@ This email was sent via HireFlow AI — AI-powered recruitment platform.`;
     return false;
   }
 }
+
+// ─── Generic send email ───────────────────────────────────────────────────────
+export async function sendGmail(
+  toEmail: string,
+  subject: string,
+  body: string,
+  tokenOverride?: string
+): Promise<boolean> {
+  try {
+    const token = tokenOverride || await getGmailToken();
+    const mimeMessage = [
+      `To: ${toEmail}`,
+      `Subject: ${subject}`,
+      `Content-Type: text/plain; charset=utf-8`,
+      `MIME-Version: 1.0`,
+      ``,
+      body,
+    ].join('\n');
+
+    const encoded = btoa(unescape(encodeURIComponent(mimeMessage)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+
+    const res = await fetch(`${GMAIL_API}/users/me/messages/send`, {
+      method: 'POST',
+      headers: {
+        ...authHeader(token),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw: encoded }),
+    });
+
+    return res.ok;
+  } catch (error) {
+    console.error("Gmail send email failed:", error);
+    return false;
+  }
+}
+
