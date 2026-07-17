@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Briefcase, X, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, Briefcase, X, ChevronRight, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { generateAndSaveJD } from '../services/jdService';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useJobStore } from '../store/jobStore';
@@ -16,6 +17,152 @@ const normalizeList = (value: string[] | string | null | undefined) => {
   if (Array.isArray(value)) return value;
   return value.split(',').map(item => item.trim()).filter(Boolean);
 };
+
+// ─── Agent 1 UI: Generate JD from raw HR notes ───────────────────────────────
+
+interface JDPreview {
+  title: string;
+  required_skills: string[];
+  experience_level: string;
+  responsibilities: string[];
+  tools: string[];
+}
+
+function JDGeneratorPanel({ onSuccess }: { onSuccess: () => void }) {
+  const addJob = useJobStore((s) => s.addJob);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<JDPreview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    if (!notes.trim()) return toast.error('Please enter some HR notes first');
+    setLoading(true);
+    setPreview(null);
+    setError(null);
+
+    try {
+      const { agentResult, savedJob } = await generateAndSaveJD(notes);
+
+      if (!agentResult.success) {
+        setError(agentResult.error);
+        return;
+      }
+
+      // Show preview
+      setPreview(agentResult.data);
+
+      if (savedJob) {
+        addJob(savedJob);
+        toast.success('Job role generated and saved!');
+        // Keep preview visible for 1.5 s then close
+        setTimeout(() => onSuccess(), 1500);
+      } else {
+        toast.success('JD generated (not saved — check Supabase connection)');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setError(msg);
+      toast.error('Generation failed: ' + msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Input */}
+      <div>
+        <label className="label">
+          Raw HR Notes
+          <span className="ml-2 text-xs text-white/30">describe the role in plain language</span>
+        </label>
+        <textarea
+          id="jd-generator-notes"
+          className="input-field min-h-36 resize-none font-mono text-xs leading-relaxed"
+          placeholder={`e.g.\nWe need a senior backend engineer for our fintech startup.\nThey'll own payment microservices in Node.js + PostgreSQL, work with AWS…`}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+        <p className="mt-1.5 text-xs text-white/30">
+          Agent 1 · llama-3.3-70b-versatile · temp 0.3
+        </p>
+      </div>
+
+      <button
+        id="jd-generator-submit"
+        onClick={handleGenerate}
+        disabled={loading}
+        className="btn-primary w-full justify-center"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {loading ? 'Generating JD…' : 'Generate Job Description'}
+      </button>
+
+      {/* Error state */}
+      {error && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <div>
+            <p className="text-sm font-medium text-red-300">Generation failed</p>
+            <p className="mt-0.5 text-xs text-red-400/70">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Preview of generated JD */}
+      {preview && (
+        <div className="space-y-4 rounded-xl border border-brand-400/20 bg-brand-500/8 p-5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-brand-400" />
+            <p className="text-sm font-semibold text-brand-300">Generated Job Description</p>
+          </div>
+
+          <div className="space-y-3 text-sm">
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wider text-white/30">Title</span>
+              <p className="mt-0.5 font-semibold text-white">{preview.title}</p>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wider text-white/30">Experience Level</span>
+              <p className="mt-0.5 text-white/70">{preview.experience_level}</p>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wider text-white/30">Required Skills</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {preview.required_skills.map((s, i) => (
+                  <span key={i} className="badge-purple text-xs">{s}</span>
+                ))}
+              </div>
+            </div>
+            {preview.tools.length > 0 && (
+              <div>
+                <span className="text-xs font-medium uppercase tracking-wider text-white/30">Tools</span>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {preview.tools.map((t, i) => (
+                    <span key={i} className="badge-blue text-xs">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wider text-white/30">Responsibilities</span>
+              <ul className="mt-1.5 space-y-1">
+                {preview.responsibilities.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-white/60">
+                    <span className="mt-0.5 text-brand-400">•</span>{r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function JobForm({ onSuccess }: { onSuccess: () => void }) {
   const user = useAuthStore((s) => s.user);
@@ -159,11 +306,14 @@ function JobForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+type PanelMode = 'none' | 'manual' | 'ai';
+
 export default function Jobs() {
   const { jobs, setJobs, setSelectedJob } = useJobStore();
   const { clear } = useCandidateStore();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const [panelMode, setPanelMode] = useState<PanelMode>('none');
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -188,6 +338,8 @@ export default function Jobs() {
     navigate('/candidates');
   };
 
+  const closeAll = () => { setPanelMode('none'); setShowForm(false); };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -195,13 +347,42 @@ export default function Jobs() {
           <h1 className="font-display text-2xl font-bold text-white">Job Roles</h1>
           <p className="mt-1 text-sm text-white/50">Create and manage roles to screen candidates against.</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <Plus className="h-4 w-4" />
-          {showForm ? 'Cancel' : 'New Role'}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Agent 1 — Generate with AI */}
+          <button
+            id="jobs-generate-ai-btn"
+            onClick={() => { setPanelMode(panelMode === 'ai' ? 'none' : 'ai'); setShowForm(false); }}
+            className={`btn-secondary flex items-center gap-2 ${
+              panelMode === 'ai' ? 'border-brand-400/50 text-brand-300' : ''
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            {panelMode === 'ai' ? 'Cancel' : 'Generate with AI'}
+          </button>
+          {/* Manual form */}
+          <button
+            id="jobs-new-role-btn"
+            onClick={() => { setShowForm(!showForm); setPanelMode('none'); }}
+            className="btn-primary"
+          >
+            <Plus className="h-4 w-4" />
+            {showForm ? 'Cancel' : 'New Role'}
+          </button>
+        </div>
       </div>
 
-      {/* Form */}
+      {/* Agent 1 — AI Generator Panel */}
+      {panelMode === 'ai' && (
+        <div className="glass-card-solid p-6 animate-slide-up">
+          <div className="mb-5 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-brand-400" />
+            <h2 className="section-title">Generate Job Description with AI</h2>
+          </div>
+          <JDGeneratorPanel onSuccess={closeAll} />
+        </div>
+      )}
+
+      {/* Manual Form */}
       {showForm && (
         <div className="glass-card-solid p-6 animate-slide-up">
           <h2 className="section-title mb-5">Create New Job Role</h2>
