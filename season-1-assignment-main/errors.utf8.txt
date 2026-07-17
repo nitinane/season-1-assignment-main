@@ -1,0 +1,18 @@
+﻿src/components/layout/AppLayout.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/layout/Sidebar.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/lib/parser.ts(18,14): error TS2345: Argument of type '(item: { str?: string; }) => string' is not assignable to parameter of type '(value: TextItem | TextMarkedContent, index: number, array: (TextItem | TextMarkedContent)[]) => string'.
+  Types of parameters 'item' and 'value' are incompatible.
+    Type 'TextItem | TextMarkedContent' is not assignable to type '{ str?: string | undefined; }'.
+      Type 'TextMarkedContent' has no properties in common with type '{ str?: string | undefined; }'.
+src/pages/Analytics.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Analytics.tsx(5,24): error TS6133: 'Legend' is declared but its value is never read.
+src/pages/Analytics.tsx(7,10): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/pages/Analytics.tsx(187,149): error TS18048: 'percent' is possibly 'undefined'.
+src/pages/Candidates.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Dashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Jobs.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/Jobs.tsx(2,44): error TS6133: 'Trash2' is declared but its value is never read.
+src/pages/Login.tsx(15,9): error TS6133: 'navigate' is declared but its value is never read.
+src/pages/Settings.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/Settings.tsx(4,17): error TS6133: 'RefreshCw' is declared but its value is never read.
+src/pages/Settings.tsx(36,30): error TS6133: 'session' is declared but its value is never read.
