@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Briefcase, Users, BarChart3,
-  Settings, LogOut, Zap, ChevronRight
+  Settings, LogOut, Zap, ChevronRight, FileText
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -10,6 +10,7 @@ import clsx from 'clsx';
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/jobs', icon: Briefcase, label: 'Job Roles' },
+  { to: '/applications', icon: FileText, label: 'Applications' },
   { to: '/candidates', icon: Users, label: 'Candidates' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/settings', icon: Settings, label: 'Settings' },
