@@ -282,6 +282,52 @@ async function upsertDrivePollState(
   );
 }
 
+/**
+ * Lists new files in the specified Drive folder since the last poll.
+ * Updates the drive_poll_state table with the new timestamp.
+ */
+export async function poll_drive_folder(
+  folderId: string,
+  googleToken: string
+): Promise<Array<{ id: string; name: string; mimeType: string; createdTime?: string }>> {
+  const hr_user_id = await getCurrentUser();
+
+  // 1. Get the last poll time from DB
+  const { data: pollState } = await supabase
+    .from('drive_poll_state')
+    .select('last_polled')
+    .eq('hr_user_id', hr_user_id)
+    .eq('folder_id', folderId)
+    .maybeSingle();
+
+  // 2. Construct search query
+  let q = `'${folderId}' in parents and trashed = false and (mimeType = 'application/pdf' or mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType = 'application/msword')`;
+  
+  if (pollState?.last_polled) {
+    // Only query files created after the last polled time
+    q += ` and createdTime > '${pollState.last_polled}'`;
+  }
+
+  const encodedQ = encodeURIComponent(q);
+  const res = await fetch(
+    `${DRIVE_API}/files?q=${encodedQ}&fields=files(id,name,mimeType,createdTime)&orderBy=createdTime desc&pageSize=100`,
+    { headers: driveAuthHeader(googleToken) }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Drive API error: ${err?.error?.message || res.statusText}`);
+  }
+
+  const body = await res.json();
+  const files = body.files ?? [];
+
+  // 3. Update the poll state timestamp to now
+  await upsertDrivePollState(hr_user_id, folderId, new Date().toISOString());
+
+  return files;
+}
+
 // ─── Entry Point 3c: Ingest from Google Drive folder ─────────────────────────
 
 /**

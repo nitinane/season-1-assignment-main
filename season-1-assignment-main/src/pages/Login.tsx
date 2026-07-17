@@ -97,11 +97,11 @@ export default function Login() {
               </p>
             </div>
 
-            {/* Gmail scopes notice */}
+            {/* Google Workspace scopes notice */}
             <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/8 p-4">
-              <p className="text-xs font-semibold text-amber-400 mb-1">Gmail Access Required</p>
+              <p className="text-xs font-semibold text-amber-400 mb-1">Google Workspace Access Required</p>
               <p className="text-xs text-amber-400/70 leading-relaxed">
-                HireFlow AI needs access to read your inbox (resumes) and send shortlist emails. We never store your Gmail credentials.
+                HireFlow AI needs access to read your Gmail inbox (resumes), send shortlist emails, and retrieve resumes from your watched Google Drive folder. We never store your Google credentials.
               </p>
             </div>
 

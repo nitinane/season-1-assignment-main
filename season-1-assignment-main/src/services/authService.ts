@@ -6,7 +6,7 @@ export const handleGoogleLogin = async () => {
     provider: "google",
     options: {
       scopes:
-        "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.readonly",
       redirectTo: `${window.location.origin}/`,
       queryParams: {
         access_type: "offline",

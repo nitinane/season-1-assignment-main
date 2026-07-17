@@ -198,10 +198,11 @@ export default function Settings() {
         )}
 
         <div className="text-xs text-white/30 space-y-1.5">
-          <p className="font-semibold text-white/50 mb-2">Requested Gmail Scopes:</p>
+          <p className="font-semibold text-white/50 mb-2">Requested OAuth Scopes:</p>
           {[
             'gmail.readonly — Read inbox and attached resumes',
             'gmail.send — Send shortlist notification emails',
+            'drive.readonly — Read resumes from watched Google Drive folder',
           ].map((scope) => (
             <div key={scope} className="flex items-center gap-2">
               <CheckCircle className="h-3 w-3 text-emerald-400/60" />
