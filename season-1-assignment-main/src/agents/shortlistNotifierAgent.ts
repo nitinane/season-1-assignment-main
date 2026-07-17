@@ -13,6 +13,7 @@ import Groq from 'groq-sdk';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import { sendGmail } from '../lib/gmail';
+import { notify_hr } from '../services/notificationService';
 
 export interface EmailOutput {
   subject: string;
@@ -155,6 +156,13 @@ export async function notifyShortlistedCandidate(
     if (updateErr) {
       return { success: false, error: `DB status update to shortlisted failed: ${updateErr.message}` };
     }
+
+    // Trigger Agent 9 notification
+    notify_hr(
+      hr_user_id,
+      'shortlist_email_sent',
+      `Shortlist email sent to "${app.candidate_name}" for position "${job.title}"`
+    ).catch(console.error);
 
     // Optional: Log email to sent_emails for audit trail
     await supabase.from('sent_emails').insert({

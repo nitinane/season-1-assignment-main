@@ -14,6 +14,7 @@ import Groq from 'groq-sdk';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import { sendGmail } from '../lib/gmail';
+import { notify_hr } from '../services/notificationService';
 
 export interface InviteEmailOutput {
   subject: string;
@@ -203,6 +204,13 @@ export async function scheduleInterview(
     if (appUpdateErr) {
       return { success: false, error: `Failed to update application status: ${appUpdateErr.message}` };
     }
+
+    // Trigger Agent 9 notification
+    notify_hr(
+      hr_user_id,
+      'interview_scheduled',
+      `Interview scheduled for candidate "${app.candidate_name}" (${job.title}) at ${friendlyDate}`
+    ).catch(console.error);
 
     // Log the sent email
     await supabase.from('sent_emails').insert({

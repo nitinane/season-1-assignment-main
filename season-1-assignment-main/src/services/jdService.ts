@@ -22,6 +22,8 @@ import { getCurrentUser } from '../services/authService';
 import { runJDGeneratorAgent } from '../agents/jdGeneratorAgent';
 import type { JDOutput, AgentResult } from '../agents/jdGeneratorAgent';
 import type { JobRole } from '../types';
+import { notify_hr } from './notificationService';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +84,14 @@ export async function generateAndSaveJD(hrNotes: string): Promise<SavedJD> {
   // 2. Save to database
   try {
     const savedJob = await saveJDToDatabase(agentResult.data);
+    
+    // Trigger Agent 9 notification
+    notify_hr(
+      savedJob.hr_user_id,
+      'jd_created',
+      `Job description created: "${savedJob.title}" (Experience Level: ${savedJob.experience_level || 'N/A'})`
+    ).catch(console.error);
+
     return { agentResult, savedJob };
   } catch (dbError) {
     // Agent succeeded but DB failed — wrap and surface the error

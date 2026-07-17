@@ -15,6 +15,7 @@ import Groq from 'groq-sdk';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import { sendGmail } from '../lib/gmail';
+import { notify_hr } from '../services/notificationService';
 
 export interface DecisionEmailOutput {
   subject: string;
@@ -186,7 +187,7 @@ export async function sendDecisionEmail(
     // Fetch the application
     const { data: app, error: appErr } = await supabase
       .from('applications')
-      .select('candidate_email')
+      .select('candidate_name, candidate_email, job_roles:job_id(title)')
       .eq('id', applicationId)
       .eq('hr_user_id', hr_user_id)
       .single();
@@ -194,6 +195,8 @@ export async function sendDecisionEmail(
     if (appErr || !app) {
       return { success: false, error: `Application not found: ${appErr?.message || 'Unknown error'}` };
     }
+
+    const job = app.job_roles as any;
 
     // Send the email via Gmail API
     const sent = await sendGmail(
@@ -218,6 +221,13 @@ export async function sendDecisionEmail(
     if (appUpdateErr) {
       return { success: false, error: `Failed to update application status: ${appUpdateErr.message}` };
     }
+
+    // Trigger Agent 9 notification
+    notify_hr(
+      hr_user_id,
+      'hiring_decision_sent',
+      `Hiring decision "${newStatus.toUpperCase()}" processed for candidate "${app.candidate_name}" (${job?.title || 'Unknown Role'})`
+    ).catch(console.error);
 
     // Log the sent email
     await supabase.from('sent_emails').insert({

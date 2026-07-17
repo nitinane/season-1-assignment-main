@@ -22,6 +22,7 @@
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
 import { parsePDF, parseDOCX } from '../lib/parser';
+import { notify_hr } from '../services/notificationService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -189,6 +190,13 @@ export async function ingestFromBlob(
     if (skipped) {
       return { success: true, error: `Skipped (already ingested): ${filename}` };
     }
+
+    // Trigger Agent 9 notification
+    notify_hr(
+      hr_user_id,
+      'application_ingested',
+      `New application ingested for candidate "${candidate_name}" (${filename})`
+    ).catch(console.error);
 
     return { success: true, application: application! };
   } catch (e) {

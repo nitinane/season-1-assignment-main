@@ -22,6 +22,7 @@ import { getCurrentUser } from '../services/authService';
 import type { Application } from './applicationIngestorAgent';
 import { notifyShortlistedCandidate } from './shortlistNotifierAgent';
 import { generateInterviewQuestionsForApplication } from './questionGeneratorAgent';
+import { notify_hr } from '../services/notificationService';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -308,6 +309,13 @@ export async function scoreApplication(applicationId: string): Promise<ScorerRes
 
     // 4. Update the DB row
     await updateApplicationScore(applicationId, agentResult.data);
+
+    // Trigger Agent 9 notification
+    notify_hr(
+      hr_user_id,
+      'score_ready',
+      `Resume score ready for "${app.candidate_name}": ${agentResult.data.match_score}/100`
+    ).catch(console.error);
 
     // 5. Trigger Post-Scoring Pipeline (Agent 5 + Agent 6) if score >= 70
     if (agentResult.data.match_score >= 70) {

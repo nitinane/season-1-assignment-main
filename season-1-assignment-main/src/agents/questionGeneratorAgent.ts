@@ -11,6 +11,7 @@
 import Groq from 'groq-sdk';
 import { supabase } from '../lib/supabase';
 import { getCurrentUser } from '../services/authService';
+import { notify_hr } from '../services/notificationService';
 
 export interface GeneratedQuestion {
   category: 'technical' | 'behavioral' | 'gap-focused';
@@ -197,6 +198,13 @@ export async function generateInterviewQuestionsForApplication(
 
       if (insertErr) throw insertErr;
     }
+
+    // Trigger Agent 9 notification
+    notify_hr(
+      hr_user_id,
+      'questions_generated',
+      `8 interview questions generated for candidate "${app.candidate_name}" (${job.title})`
+    ).catch(console.error);
 
     return { success: true, questions };
   } catch (e) {
