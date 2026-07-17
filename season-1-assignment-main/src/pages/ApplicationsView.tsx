@@ -14,9 +14,10 @@ import type { ReactNode } from 'react';
 import {
   Upload, FolderOpen, Loader2, RefreshCw, Zap,
   CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp,
-  FileText, Briefcase, Star, X, Calendar, Check
+  FileText, Briefcase, Star, X, Calendar, Check, Send, AlertTriangle, Mail
 } from 'lucide-react';
 import { scheduleInterview } from '../agents/interviewSchedulerAgent';
+import { draftDecisionEmail, sendDecisionEmail } from '../agents/hiringDecisionMailerAgent';
 import { useDropzone } from 'react-dropzone';
 import { applicationService } from '../services/applicationService';
 import { ingestFromFile } from '../agents/applicationIngestorAgent';
@@ -195,6 +196,14 @@ export default function ApplicationsView() {
   const [scheduleDateTime, setScheduleDateTime] = useState('');
   const [submittingSchedule, setSubmittingSchedule] = useState(false);
 
+  // Agent 8 Hiring Decision State
+  const [decisionAppId, setDecisionAppId] = useState<string | null>(null);
+  const [decisionResult, setDecisionResult] = useState<'pass' | 'fail'>('pass');
+  const [decisionNotes, setDecisionNotes] = useState('');
+  const [draftedEmail, setDraftedEmail] = useState<{ subject: string; body: string } | null>(null);
+  const [draftingEmailLoading, setDraftingEmailLoading] = useState(false);
+  const [sendingDecisionLoading, setSendingDecisionLoading] = useState(false);
+
   // Load jobs on mount
   useEffect(() => {
     jobRoleService.getRoles().then(setJobs).catch(console.error);
@@ -298,6 +307,53 @@ export default function ApplicationsView() {
       toast.error(`Error: ${e.message}`, { id: toastId });
     } finally {
       setSubmittingSchedule(false);
+    }
+  };
+
+  // ── Draft Decision Email ──
+  const handleDraftDecision = async (appId: string) => {
+    setDraftingEmailLoading(true);
+    setDraftedEmail(null);
+    try {
+      const res = await draftDecisionEmail(appId, decisionResult, decisionNotes);
+      if (res.success && res.email) {
+        setDraftedEmail(res.email);
+        toast.success('Draft email generated successfully!');
+      } else {
+        toast.error(`Drafting failed: ${res.error}`);
+      }
+    } catch (e: any) {
+      toast.error(`Error: ${e.message}`);
+    } finally {
+      setDraftingEmailLoading(false);
+    }
+  };
+
+  // ── Send Decision Email ──
+  const handleSendDecision = async (appId: string) => {
+    if (!draftedEmail) return toast.error('Please draft the email first');
+    setSendingDecisionLoading(true);
+    const toastId = toast.loading('Sending decision email & updating candidate status…');
+    try {
+      const res = await sendDecisionEmail(
+        appId,
+        decisionResult,
+        draftedEmail.subject,
+        draftedEmail.body
+      );
+      if (res.success) {
+        toast.success(`Hiring decision processed successfully! Candidate is marked as ${decisionResult === 'pass' ? 'hired' : 'rejected'}.`, { id: toastId });
+        setDecisionAppId(null);
+        setDecisionNotes('');
+        setDraftedEmail(null);
+        loadApplications();
+      } else {
+        toast.error(`Sending failed: ${res.error}`, { id: toastId });
+      }
+    } catch (e: any) {
+      toast.error(`Error: ${e.message}`, { id: toastId });
+    } finally {
+      setSendingDecisionLoading(false);
     }
   };
 
@@ -480,7 +536,7 @@ export default function ApplicationsView() {
                     {app.status === 'shortlisted' && (
                       <button
                         id={`schedule-btn-${app.id}`}
-                        onClick={() => setSchedulingAppId(app.id)}
+                        onClick={() => { setSchedulingAppId(app.id); setDecisionAppId(null); }}
                         className="btn-secondary h-7 px-3 text-xs flex items-center gap-1 shrink-0"
                       >
                         <Calendar className="h-3 w-3" />
@@ -488,7 +544,19 @@ export default function ApplicationsView() {
                       </button>
                     )}
 
-                    {app.status !== 'ingested' && app.status !== 'shortlisted' && (
+                    {/* Hiring Decision Action */}
+                    {app.status === 'interview_scheduled' && (
+                      <button
+                        id={`decision-btn-${app.id}`}
+                        onClick={() => { setDecisionAppId(app.id); setSchedulingAppId(null); setDraftedEmail(null); }}
+                        className="btn-secondary h-7 px-3 text-xs flex items-center gap-1 shrink-0 border-brand-500/35 text-brand-300 hover:bg-brand-500/10"
+                      >
+                        <Send className="h-3 w-3" />
+                        Decision
+                      </button>
+                    )}
+
+                    {app.status !== 'ingested' && app.status !== 'shortlisted' && app.status !== 'interview_scheduled' && (
                       <div className="w-[72px]" /> /* spacer */
                     )}
                   </div>
@@ -525,6 +593,121 @@ export default function ApplicationsView() {
                         >
                           Cancel
                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Collapsible Hiring Decision Form */}
+                  {decisionAppId === app.id && (
+                    <div className="bg-brand-500/5 px-5 py-5 border-t border-brand-400/10 space-y-4 animate-slide-up text-xs">
+                      <div className="flex items-center gap-2 font-semibold text-brand-300">
+                        <Send className="h-4 w-4" />
+                        Make Hiring Decision (Agent 8)
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {/* Left Side: Decision Config */}
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-white/40 block mb-1.5">Interview Result</label>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => { setDecisionResult('pass'); setDraftedEmail(null); }}
+                                className={`px-4 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                                  decisionResult === 'pass'
+                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                                    : 'bg-white/3 border-white/10 text-white/40 hover:text-white/60'
+                                }`}
+                              >
+                                <Check className="h-4 w-4" /> Pass (Offer)
+                              </button>
+                              <button
+                                onClick={() => { setDecisionResult('fail'); setDraftedEmail(null); }}
+                                className={`px-4 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                                  decisionResult === 'fail'
+                                    ? 'bg-red-500/15 border-red-500/40 text-red-300'
+                                    : 'bg-white/3 border-white/10 text-white/40 hover:text-white/60'
+                                }`}
+                              >
+                                <X className="h-4 w-4" /> Fail (Rejection)
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-white/40 block mb-1">Interview Performance Notes</label>
+                            <textarea
+                              className="input-field min-h-24 resize-none text-xs leading-relaxed"
+                              placeholder="e.g. Charlie showed fantastic problem-solving but struggled with CSS architecture. Keep notes polite as they may influence rejection feedback."
+                              value={decisionNotes}
+                              onChange={(e) => setDecisionNotes(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDraftDecision(app.id)}
+                              disabled={draftingEmailLoading || sendingDecisionLoading}
+                              className="btn-primary h-9 text-xs px-4 flex items-center gap-1.5"
+                            >
+                              {draftingEmailLoading ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Zap className="h-4.5 w-4.5" />}
+                              {draftingEmailLoading ? 'Drafting…' : 'Draft Decision Email'}
+                            </button>
+                            <button
+                              onClick={() => { setDecisionAppId(null); setDraftedEmail(null); }}
+                              disabled={draftingEmailLoading || sendingDecisionLoading}
+                              className="btn-secondary h-9 text-xs px-3"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Email Draft Review Screen */}
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-white/40 block mb-1">Email Draft Review Screen</label>
+                          {draftedEmail ? (
+                            <div className="rounded-xl border border-white/10 bg-surface-50/40 p-4 space-y-3 animate-fade-in">
+                              <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-white/30 block">Subject</span>
+                                <input
+                                  className="input-field text-xs h-8 font-medium w-full"
+                                  value={draftedEmail.subject}
+                                  onChange={(e) => setDraftedEmail({ ...draftedEmail, subject: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-white/30 block">Body</span>
+                                <textarea
+                                  className="input-field min-h-36 font-mono text-[11px] leading-relaxed resize-y w-full"
+                                  value={draftedEmail.body}
+                                  onChange={(e) => setDraftedEmail({ ...draftedEmail, body: e.target.value })}
+                                />
+                              </div>
+
+                              {decisionResult === 'pass' && (
+                                <div className="flex items-start gap-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-2.5 text-[11px] text-yellow-300">
+                                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                                  <span>Verify you have replaced the verbatim placeholder <code>[[TO BE FILLED BY HR BEFORE SENDING]]</code> with compensation/terms.</span>
+                                </div>
+                              )}
+
+                              <button
+                                onClick={() => handleSendDecision(app.id)}
+                                disabled={sendingDecisionLoading}
+                                className="btn-primary w-full h-9 text-xs justify-center items-center gap-1.5"
+                              >
+                                {sendingDecisionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                {sendingDecisionLoading ? 'Sending…' : 'Approve & Send Decision'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="h-full min-h-36 rounded-xl border border-dashed border-white/10 flex flex-col justify-center items-center text-center p-6 text-white/30">
+                              <Mail className="h-8 w-8 mb-2 opacity-40" />
+                              Configure decision and click "Draft Decision Email" to review the custom email draft here before sending.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
