@@ -14,8 +14,9 @@ import type { ReactNode } from 'react';
 import {
   Upload, FolderOpen, Loader2, RefreshCw, Zap,
   CheckCircle2, Clock, AlertCircle, ChevronDown, ChevronUp,
-  FileText, Briefcase, Star, X,
+  FileText, Briefcase, Star, X, Calendar, Check
 } from 'lucide-react';
+import { scheduleInterview } from '../agents/interviewSchedulerAgent';
 import { useDropzone } from 'react-dropzone';
 import { applicationService } from '../services/applicationService';
 import { ingestFromFile } from '../agents/applicationIngestorAgent';
@@ -189,6 +190,11 @@ export default function ApplicationsView() {
   const [scoringAll, setScoringAll] = useState(false);
   const [showDrive, setShowDrive] = useState(false);
 
+  // Agent 7 Interview Scheduling State
+  const [schedulingAppId, setSchedulingAppId] = useState<string | null>(null);
+  const [scheduleDateTime, setScheduleDateTime] = useState('');
+  const [submittingSchedule, setSubmittingSchedule] = useState(false);
+
   // Load jobs on mount
   useEffect(() => {
     jobRoleService.getRoles().then(setJobs).catch(console.error);
@@ -270,6 +276,28 @@ export default function ApplicationsView() {
       }
     } finally {
       setScoring(null);
+    }
+  };
+
+  // ── Confirm Schedule ──
+  const handleConfirmSchedule = async (appId: string) => {
+    if (!scheduleDateTime) return toast.error('Please select a date and time');
+    setSubmittingSchedule(true);
+    const toastId = toast.loading('Scheduling interview & sending invitation email…');
+    try {
+      const res = await scheduleInterview(appId, scheduleDateTime);
+      if (res.success) {
+        toast.success('Interview scheduled and email invitation sent!', { id: toastId });
+        setSchedulingAppId(null);
+        setScheduleDateTime('');
+        loadApplications();
+      } else {
+        toast.error(`Scheduling failed: ${res.error}`, { id: toastId });
+      }
+    } catch (e: any) {
+      toast.error(`Error: ${e.message}`, { id: toastId });
+    } finally {
+      setSubmittingSchedule(false);
     }
   };
 
@@ -409,45 +437,96 @@ export default function ApplicationsView() {
             {applications.map((app) => {
               const statusCfg = STATUS_CONFIG[app.status];
               const isScoring = scoring === app.id;
+              const isScheduling = schedulingAppId === app.id;
               return (
-                <div key={app.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/2 transition-colors">
-                  {/* Candidate info */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-white truncate">{app.candidate_name}</p>
-                    <p className="text-xs text-white/40 truncate">{app.candidate_email || '—'}</p>
+                <div key={app.id} className="divide-y divide-white/4">
+                  <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/2 transition-colors">
+                    {/* Candidate info */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">{app.candidate_name}</p>
+                      <p className="text-xs text-white/40 truncate">{app.candidate_email || '—'}</p>
+                    </div>
+
+                    {/* Score */}
+                    <div className="w-12 text-center">{scoreBadge(app.score)}</div>
+
+                    {/* Score breakdown */}
+                    <div className="w-16">
+                      <ScoreBreakdown reasoning={app.score_reasoning} />
+                    </div>
+
+                    {/* Status badge */}
+                    <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${statusCfg.className}`}>
+                      {statusCfg.icon}
+                      {statusCfg.label}
+                    </span>
+
+                    {/* Score action */}
+                    {app.status === 'ingested' && (
+                      <button
+                        id={`score-btn-${app.id}`}
+                        onClick={() => handleScoreOne(app.id)}
+                        disabled={isScoring || scoringAll}
+                        className="btn-secondary h-7 px-3 text-xs flex items-center gap-1 shrink-0"
+                      >
+                        {isScoring
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Zap className="h-3 w-3" />}
+                        {isScoring ? 'Scoring…' : 'Score'}
+                      </button>
+                    )}
+
+                    {/* Schedule Action */}
+                    {app.status === 'shortlisted' && (
+                      <button
+                        id={`schedule-btn-${app.id}`}
+                        onClick={() => setSchedulingAppId(app.id)}
+                        className="btn-secondary h-7 px-3 text-xs flex items-center gap-1 shrink-0"
+                      >
+                        <Calendar className="h-3 w-3" />
+                        Schedule
+                      </button>
+                    )}
+
+                    {app.status !== 'ingested' && app.status !== 'shortlisted' && (
+                      <div className="w-[72px]" /> /* spacer */
+                    )}
                   </div>
 
-                  {/* Score */}
-                  <div className="w-12 text-center">{scoreBadge(app.score)}</div>
-
-                  {/* Score breakdown */}
-                  <div className="w-16">
-                    <ScoreBreakdown reasoning={app.score_reasoning} />
-                  </div>
-
-                  {/* Status badge */}
-                  <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${statusCfg.className}`}>
-                    {statusCfg.icon}
-                    {statusCfg.label}
-                  </span>
-
-                  {/* Score action */}
-                  {app.status === 'ingested' && (
-                    <button
-                      id={`score-btn-${app.id}`}
-                      onClick={() => handleScoreOne(app.id)}
-                      disabled={isScoring || scoringAll}
-                      className="btn-secondary h-7 px-3 text-xs flex items-center gap-1 shrink-0"
-                    >
-                      {isScoring
-                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                        : <Zap className="h-3 w-3" />}
-                      {isScoring ? 'Scoring…' : 'Score'}
-                    </button>
-                  )}
-
-                  {app.status !== 'ingested' && (
-                    <div className="w-[72px]" /> /* spacer */
+                  {/* Collapsible Scheduler Form */}
+                  {isScheduling && (
+                    <div className="bg-brand-500/5 px-5 py-4 border-t border-brand-400/10 space-y-3 animate-slide-up">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-brand-300">
+                        <Calendar className="h-4 w-4" />
+                        Schedule Interview & Send Invite
+                      </div>
+                      <div className="flex items-end gap-3 flex-wrap">
+                        <div className="space-y-1">
+                          <label className="text-[10px] uppercase font-bold text-white/40 block">Select Date & Time</label>
+                          <input
+                            type="datetime-local"
+                            className="input-field text-xs h-9 w-60"
+                            value={scheduleDateTime}
+                            onChange={(e) => setScheduleDateTime(e.target.value)}
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleConfirmSchedule(app.id)}
+                          disabled={submittingSchedule}
+                          className="btn-primary h-9 text-xs px-4 flex items-center gap-1 shrink-0"
+                        >
+                          {submittingSchedule ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                          {submittingSchedule ? 'Scheduling…' : 'Confirm'}
+                        </button>
+                        <button
+                          onClick={() => setSchedulingAppId(null)}
+                          disabled={submittingSchedule}
+                          className="btn-secondary h-9 text-xs px-3 shrink-0"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
