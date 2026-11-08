@@ -48,7 +48,6 @@ export function gnaniAuthHeaders(): Record<string, string> {
   }
   return { 'X-API-Key-ID': key };
 }
-}
 
 // Fetch with a 30s timeout. Throws an Error with a generic message
 // (never includes the API key or upstream auth header).
