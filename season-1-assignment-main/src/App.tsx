@@ -15,6 +15,7 @@ import ShortlistView from './pages/ShortlistView';
 import FraudDashboard from './pages/FraudDashboard';
 import FollowUpTracker from './pages/FollowUpTracker';
 import ApplicationsView from './pages/ApplicationsView';
+import VoiceScreen from './pages/VoiceScreen';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="follow-up" element={<FollowUpTracker />} />
           <Route path="candidates" element={<Candidates />} />
           <Route path="applications" element={<ApplicationsView />} />
+          <Route path="voice-screen" element={<VoiceScreen />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />
         </Route>

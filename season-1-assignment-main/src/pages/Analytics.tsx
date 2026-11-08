@@ -59,23 +59,30 @@ export default function Analytics() {
     async function fetchRealData() {
       try {
         const currentUser = await getCurrentUser();
-        const [
-          { data: candidates },
-          { data: shortlisted },
-          { data: duplicates },
-          { data: frauds }
-        ] = await Promise.all([
+
+        // Each query is independent — a 400 on flags tables (before migration)
+        // should not crash the whole analytics page.
+        const [candidatesRes, shortlistedRes, duplicatesRes, fraudsRes] = await Promise.all([
           supabase.from('candidates').select('*').eq('hr_user_id', currentUser.id),
           supabase.from('shortlisted_candidates').select('*').eq('hr_user_id', currentUser.id),
-          // duplicate_flags and fraud_flags schemas might need to be adjusted if not having hr_user_id, but the user plan assumed yes for all.
           supabase.from('duplicate_flags').select('candidate_id').eq('hr_user_id', currentUser.id),
           supabase.from('fraud_flags').select('candidate_id').eq('hr_user_id', currentUser.id)
         ]);
 
-        const totalC = candidates?.length || 0;
-        const totalS = shortlisted?.length || 0;
-        const dupes = duplicates?.length || 0;
-        const fraudRisk = frauds?.length || 0;
+        const candidates = candidatesRes.error ? [] : (candidatesRes.data ?? []);
+        const shortlisted = shortlistedRes.error ? [] : (shortlistedRes.data ?? []);
+        const duplicates  = duplicatesRes.error  ? [] : (duplicatesRes.data  ?? []);
+        const frauds      = fraudsRes.error       ? [] : (fraudsRes.data      ?? []);
+
+        if (candidatesRes.error)   console.warn('candidates query error:', candidatesRes.error.message);
+        if (shortlistedRes.error)  console.warn('shortlisted_candidates query error:', shortlistedRes.error.message);
+        if (duplicatesRes.error)   console.warn('duplicate_flags query error (safe):', duplicatesRes.error.message);
+        if (fraudsRes.error)       console.warn('fraud_flags query error (safe):', fraudsRes.error.message);
+
+        const totalC = candidates.length;
+        const totalS = shortlisted.length;
+        const dupes = duplicates.length;
+        const fraudRisk = frauds.length;
         
         let avgScore = 0;
         const scoreRanges = [0, 0, 0, 0, 0];

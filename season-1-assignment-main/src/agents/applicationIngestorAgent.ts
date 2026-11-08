@@ -371,6 +371,15 @@ export async function ingestFromDriveFolder(
           summary.ingested++;
           summary.applications.push(result.application);
           console.log(`[Agent 3] Ingested: ${file.name} → application ${result.application.id}`);
+          
+          // Auto-score using Agent 4
+          try {
+            const { scoreApplication } = await import('./resumeScorerAgent');
+            await scoreApplication(result.application.id);
+            console.log(`[Agent 4] Automatically scored application: ${result.application.id}`);
+          } catch (scoreErr) {
+            console.error(`[Agent 4] Automatic scoring failed for ${result.application.id}:`, scoreErr);
+          }
         } else if (result.error?.startsWith('Skipped')) {
           summary.skipped++;
           console.log(`[Agent 3] Skipped (already ingested): ${file.name}`);
