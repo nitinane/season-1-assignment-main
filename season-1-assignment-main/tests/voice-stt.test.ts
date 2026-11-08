@@ -33,7 +33,7 @@ const { mockFetchWithTimeout, mockGnaniAuthHeaders, mockReadJsonSafe, mockRequir
   }),
 }));
 
-vi.mock('./_gnani.js', () => ({
+vi.mock('../api/_gnani.js', () => ({
   fetchWithTimeout: mockFetchWithTimeout,
   gnaniAuthHeaders: mockGnaniAuthHeaders,
   readJsonSafe: mockReadJsonSafe,
