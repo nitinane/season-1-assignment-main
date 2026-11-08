@@ -10,7 +10,7 @@ const navItems = [
   { to: '/jobs',         icon: Briefcase,        label: 'Job Roles'    },
   { to: '/applications', icon: FileStack,         label: 'Applications' },
   { to: '/candidates',   icon: Users,             label: 'Candidates'   },
-  { to: '/voice-screen', icon: Headset,             label: 'Voice Screening' },
+  { to: '/voice-screen', icon: Headset,              label: 'Voice Screening Link' },
   { to: '/settings',     icon: Settings,          label: 'Settings'     },
 ];
 
