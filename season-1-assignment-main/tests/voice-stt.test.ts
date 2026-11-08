@@ -41,7 +41,7 @@ vi.mock('./_gnani.js', () => ({
   sendJson: mockSendJson,
 }));
 
-import handler from './voice-stt.ts';
+import handler from '../api/voice-stt';
 
 function createMockReqRes() {
   const chunks: Buffer[] = [];
