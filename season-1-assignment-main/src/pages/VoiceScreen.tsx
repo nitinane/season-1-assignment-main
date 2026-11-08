@@ -168,8 +168,19 @@ export default function VoiceScreen() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 760, margin: '0 auto', width: '100%' }} className="animate-fade-in">
-      {/* Header */}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Minimal standalone header — no auth / sidebar dependency */}
+      <header
+        style={{
+          padding: '14px 24px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(9,9,26,0.98)',
+        }}
+      >
+        <h1 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: 0 }}>HireFlow Voice</h1>
+      </header>
+
+      {/* Content */}
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--on-surface)', letterSpacing: '-0.02em', margin: 0 }}>
           Voice Screening
