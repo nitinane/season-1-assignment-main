@@ -7,12 +7,18 @@ function authHeader(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
+import { useAuthStore } from '../store/authStore';
+
 // ─── Token Helper ────────────────────────────────────────────────────────────
 export async function getGmailToken() {
   const { data } = await supabase.auth.getSession();
-  const token = data.session?.provider_token;
+  let token = data.session?.provider_token;
   
-  // Debug logging as requested
+  if (!token) {
+    token = useAuthStore.getState().accessToken;
+  }
+  
+  // Debug logging
   console.log("Current Gmail Session:", data.session);
   console.log("Extracted Provider Token:", token);
 

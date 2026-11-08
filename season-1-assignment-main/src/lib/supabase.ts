@@ -17,6 +17,11 @@ export const signInWithGoogle = async () => {
     options: {
       scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.readonly',
       redirectTo: window.location.origin + '/dashboard',
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+        include_granted_scopes: 'true',
+      },
     },
   });
   if (error) {
