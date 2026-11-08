@@ -38,7 +38,7 @@ export default async function handler(req: any, res: any) {
   try {
     const { data, error } = await supabase
       .from('voice_screenings')
-      .select('id, created_at, candidate_name, role, overall')
+      .select('id, created_at, candidate_name, email, job_id, role, overall')
       .order('created_at', { ascending: false })
       .limit(100);
 

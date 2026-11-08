@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import {
-  LayoutDashboard, Briefcase, FileStack, Users, Settings, LogOut, Zap, Headset
+  LayoutDashboard, Briefcase, FileStack, Users, Settings, LogOut, Zap,
 } from 'lucide-react';
 
 const navItems = [
@@ -10,7 +10,6 @@ const navItems = [
   { to: '/jobs',         icon: Briefcase,        label: 'Job Roles'    },
   { to: '/applications', icon: FileStack,         label: 'Applications' },
   { to: '/candidates',   icon: Users,             label: 'Candidates'   },
-  { to: '/recruiter', icon: Headset,              label: 'Voice Recruiter' },
   { to: '/settings',     icon: Settings,          label: 'Settings'     },
 ];
 

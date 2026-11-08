@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { initializeAuthListener } from './services/authService';
 import { useAuthStore } from './store/authStore';
 import AppLayout from './components/layout/AppLayout';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Jobs from './pages/Jobs';
@@ -18,6 +19,10 @@ import ApplicationsView from './pages/ApplicationsView';
 import VoiceScreen from './pages/VoiceScreen';
 import VoiceResult from './pages/VoiceResult';
 import VoiceRecruiter from './pages/VoiceRecruiter';
+import ApplicantDetail from './pages/ApplicantDetail';
+import Careers from './pages/Careers';
+import Apply from './pages/Apply';
+import Interview from './pages/Interview';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -44,32 +49,40 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes outside ProtectedRoute */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/careers" element={<Careers />} />
+        <Route path="/apply/:jobId" element={<Apply />} />
+        <Route path="/interview/:id" element={<Interview />} />
         <Route path="/voice-screen" element={<VoiceScreen />} />
         <Route path="/voice-results/:id" element={<VoiceResult />} />
         <Route path="/recruiter" element={<VoiceRecruiter />} />
+        <Route path="/recruiter/applicant/:id" element={<ApplicantDetail />} />
         <Route path="/login" element={<Login />} />
+
+        {/* Protected Dashboard Routes */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <AppLayout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="jobs" element={<Jobs />} />
-          <Route path="upload" element={<ResumeUpload />} />
-          <Route path="analysis" element={<RankingView />} />
-          <Route path="shortlist" element={<ShortlistView />} />
-          <Route path="fraud" element={<FraudDashboard />} />
-          <Route path="follow-up" element={<FollowUpTracker />} />
-          <Route path="candidates" element={<Candidates />} />
-          <Route path="applications" element={<ApplicationsView />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/upload" element={<ResumeUpload />} />
+          <Route path="/analysis" element={<RankingView />} />
+          <Route path="/shortlist" element={<ShortlistView />} />
+          <Route path="/fraud" element={<FraudDashboard />} />
+          <Route path="/follow-up" element={<FollowUpTracker />} />
+          <Route path="/candidates" element={<Candidates />} />
+          <Route path="/applications" element={<ApplicationsView />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
