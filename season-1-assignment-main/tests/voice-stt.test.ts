@@ -8,10 +8,10 @@ const { mockFetchWithTimeout, mockGnaniAuthHeaders, mockReadJsonSafe, mockRequir
   mockReadJsonSafe: vi.fn(),
   mockRequireEnv: vi.fn((res, vars, placeholders) => {
     // Check if env vars are actually set and not placeholders
-    const missing = vars.filter((v) => {
+    const missing = vars.filter((v: string) => {
       const val = (process.env[v] ?? '').trim();
       if (!val) return true;
-      return placeholders?.some((p) => val.includes(p)) || false;
+      return placeholders?.some((p: string) => val.includes(p)) || false;
     });
     if (missing.length > 0) {
       // Mock sendJson to capture the call
@@ -33,7 +33,7 @@ const { mockFetchWithTimeout, mockGnaniAuthHeaders, mockReadJsonSafe, mockRequir
   }),
 }));
 
-vi.mock('./_gnani.js', () => ({
+vi.mock('../api/_gnani.js', () => ({
   fetchWithTimeout: mockFetchWithTimeout,
   gnaniAuthHeaders: mockGnaniAuthHeaders,
   readJsonSafe: mockReadJsonSafe,
@@ -41,7 +41,7 @@ vi.mock('./_gnani.js', () => ({
   sendJson: mockSendJson,
 }));
 
-import handler from './voice-stt.ts';
+import handler from '../api/voice-stt';
 
 function createMockReqRes() {
   const chunks: Buffer[] = [];
@@ -64,7 +64,7 @@ function createMockReqRes() {
     body: '' as string,
     setHeader: vi.fn((name: string, value: string) => { res.headers[name] = value; }),
     end: vi.fn((body?: string) => { res.body = body ?? ''; }),
-  } as unknown as ServerResponse;
+  } as unknown as ServerResponse & { headers: Record<string, string>; body: string };
 
   return { req, res, chunks };
 }
