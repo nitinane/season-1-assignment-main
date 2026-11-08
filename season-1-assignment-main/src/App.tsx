@@ -17,6 +17,7 @@ import FollowUpTracker from './pages/FollowUpTracker';
 import ApplicationsView from './pages/ApplicationsView';
 import VoiceScreen from './pages/VoiceScreen';
 import VoiceResult from './pages/VoiceResult';
+import VoiceRecruiter from './pages/VoiceRecruiter';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -45,6 +46,7 @@ export default function App() {
       <Routes>
         <Route path="/voice-screen" element={<VoiceScreen />} />
         <Route path="/voice-results/:id" element={<VoiceResult />} />
+        <Route path="/recruiter" element={<VoiceRecruiter />} />
         <Route path="/login" element={<Login />} />
         <Route
           path="/"
