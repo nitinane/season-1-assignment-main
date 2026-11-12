@@ -1,8 +1,7 @@
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
-  ]
+﻿{
+  "functions": {
+    "api/apply.ts": { "maxDuration": 30 },
+    "api/interview-turn.ts": { "maxDuration": 30 }
+  },
+  "rewrites": [ { "source": "/((?!api/).*)", "destination": "/" } ]
 }

@@ -53,6 +53,8 @@ export default async function handler(req: any, res: any) {
   const input = body as {
     candidate_name?: unknown;
     role?: unknown;
+    email?: unknown;
+    job_id?: unknown;
     answers?: unknown;
   };
 
@@ -73,6 +75,41 @@ export default async function handler(req: any, res: any) {
     typeof input.role === 'string' && input.role.trim()
       ? input.role.trim()
       : null;
+
+  // ── email (optional) ──────────────────────────────────────────────────────
+  let email: string | null = null;
+  if (input.email !== undefined && input.email !== null) {
+    if (typeof input.email !== 'string') {
+      return sendJson(res, 400, { error: 'Invalid email: must be a string.' });
+    }
+    const trimmed = input.email.trim();
+    if (trimmed.length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (trimmed.length > 120 || !emailRegex.test(trimmed)) {
+        return sendJson(res, 400, {
+          error: 'Invalid email: must be a valid email format up to 120 characters.',
+        });
+      }
+      email = trimmed;
+    }
+  }
+
+  // ── job_id (optional) ─────────────────────────────────────────────────────
+  let job_id: string | null = null;
+  if (input.job_id !== undefined && input.job_id !== null) {
+    if (typeof input.job_id !== 'string') {
+      return sendJson(res, 400, { error: 'Invalid job_id: must be a string.' });
+    }
+    const trimmed = input.job_id.trim();
+    if (trimmed.length > 0) {
+      if (trimmed.length > 40) {
+        return sendJson(res, 400, {
+          error: 'Invalid job_id: must be up to 40 characters.',
+        });
+      }
+      job_id = trimmed;
+    }
+  }
 
   // ── answers ─────────────────────────────────────────────────────────────────
   if (!Array.isArray(input.answers) || input.answers.length === 0 || input.answers.length > MAX_ANSWERS) {
@@ -156,7 +193,7 @@ export default async function handler(req: any, res: any) {
   try {
     const { data, error } = await supabase
       .from('voice_screenings')
-      .insert({ candidate_name, role, answers, overall })
+      .insert({ candidate_name, role, email, job_id, answers, overall })
       .select('id')
       .single();
 

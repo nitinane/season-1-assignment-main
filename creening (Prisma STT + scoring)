@@ -1,0 +1,33 @@
+ Resources/HireFlow_AI_Student_Guide.pdf            |  Bin [31m0[m -> [32m186036[m bytes
+ season-1-assignment-main/.env.example              |    5 [32m+[m
+ season-1-assignment-main/api/_gnani.ts             |   84 [32m++[m
+ season-1-assignment-main/api/voice-eval.ts         |  190 [32m+++[m
+ season-1-assignment-main/api/voice-stt.test.ts     |  337 [32m+++++[m
+ season-1-assignment-main/api/voice-stt.ts          |  144 [32m+++[m
+ season-1-assignment-main/package-lock.json         |  358 [32m+++++[m[31m-[m
+ season-1-assignment-main/package.json              |    6 [32m+[m[31m-[m
+ season-1-assignment-main/scratch_check_status.cjs  |   35 [32m+[m
+ season-1-assignment-main/scratch_test_drive.cjs    |   94 [32m++[m
+ season-1-assignment-main/scratch_test_insert.cjs   |   77 [32m++[m
+ season-1-assignment-main/scripts/test-prisma.mjs   |   93 [32m++[m
+ season-1-assignment-main/src/App.tsx               |    2 [32m+[m
+ .../src/agents/applicationIngestorAgent.ts         |    9 [32m+[m
+ season-1-assignment-main/src/api/voiceScreen.ts    |   64 [32m+[m
+ .../src/components/layout/AppLayout.tsx            |  122 [32m+[m[31m-[m
+ .../src/components/layout/Sidebar.tsx              |  167 [32m++[m[31m-[m
+ season-1-assignment-main/src/index.css             |  593 [32m++++++++[m[31m-[m
+ season-1-assignment-main/src/lib/gmail.ts          |   10 [32m+[m[31m-[m
+ season-1-assignment-main/src/lib/recorder.ts       |  132 [32m++[m
+ season-1-assignment-main/src/lib/supabase.ts       |    5 [32m+[m
+ season-1-assignment-main/src/pages/Analytics.tsx   |   29 [32m+[m[31m-[m
+ .../src/pages/ApplicationsView.tsx                 | 1311 [32m+++++++++++++[m[31m-------[m
+ season-1-assignment-main/src/pages/Candidates.tsx  | 1047 [32m++++++[m[31m----------[m
+ season-1-assignment-main/src/pages/Dashboard.tsx   |  736 [32m++++++[m[31m-----[m
+ season-1-assignment-main/src/pages/Jobs.tsx        |  676 [32m++++++[m[31m----[m
+ season-1-assignment-main/src/pages/Login.tsx       |  267 [32m++[m[31m--[m
+ season-1-assignment-main/src/pages/Settings.tsx    |  489 [32m+++++[m[31m---[m
+ season-1-assignment-main/src/pages/VoiceScreen.tsx |  426 [32m+++++++[m
+ .../src/services/demoService.ts                    |  126 [32m++[m
+ .../migrations/009_add_hr_user_id_columns.sql      |   81 [32m++[m
+ .../migrations/010_add_status_to_job_roles.sql     |    8 [32m+[m
+ 32 files changed, 5593 insertions(+), 2130 deletions(-)
