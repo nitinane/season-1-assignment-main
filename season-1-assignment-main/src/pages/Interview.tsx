@@ -31,6 +31,7 @@ export default function Interview() {
 
   const [error, setError] = useState<string | null>(null);
   const [retryAction, setRetryAction] = useState<(() => void) | null>(null);
+  const [interviewLanguage, setInterviewLanguage] = useState<'hi-en' | 'en-IN' | 'hi-IN' | 'te-IN'>('hi-en');
 
   const controllerRef = useRef<Awaited<ReturnType<typeof startRecording>> | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -111,7 +112,7 @@ export default function Interview() {
       const res = await fetch('/api/voice-tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, language: 'hi-en' }),
+        body: JSON.stringify({ text, language: interviewLanguage }),
       });
 
       if (!res.ok) {
@@ -173,6 +174,12 @@ export default function Interview() {
       if (data?.done) {
         setStage('done');
         return;
+      }
+
+      // Read language from response (if provided)
+      const allowed = ['en-IN', 'hi-en', 'hi-IN', 'te-IN'] as const;
+      if (typeof data?.language === 'string' && (allowed as readonly string[]).includes(data.language)) {
+        setInterviewLanguage(data.language as 'en-IN' | 'hi-en' | 'hi-IN' | 'te-IN');
       }
 
       setQuestion(data.question);

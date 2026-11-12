@@ -47,7 +47,12 @@ export default async function handler(req: any, res: any) {
     email?: unknown;
     resume_text?: unknown;
     consent?: unknown;
+    language?: unknown;
   };
+
+  const bodyChecked = body as { job_id?: unknown; candidate_name?: unknown; email?: unknown; resume_text?: unknown; consent?: unknown; language?: unknown };
+  const allowedLanguages = ['en-IN', 'hi-en', 'hi-IN', 'te-IN'];
+  const language = typeof bodyChecked.language === 'string' && allowedLanguages.includes(bodyChecked.language.trim()) ? bodyChecked.language.trim() : 'hi-en';
 
   // ── Validation ──────────────────────────────────────────────────────────────
   if (consent !== true) {
@@ -182,6 +187,7 @@ export default async function handler(req: any, res: any) {
         ats,
         status: 'applied',
         provider,
+        language,
       })
       .select('id')
       .single();

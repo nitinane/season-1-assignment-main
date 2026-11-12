@@ -60,14 +60,25 @@ async function generateFirstQuestion(
   jobTitle: string,
   jdText: string,
   resumeText: string,
+  language: string,
 ): Promise<string> {
+  const langInstruction = language === 'hi-en'
+    ? 'spoken-friendly simple English (conversational Hinglish in Roman script is acceptable)'
+    : language === 'en-IN'
+    ? 'simple English'
+    : language === 'hi-IN'
+    ? 'Hindi in native Devanagari script'
+    : language === 'te-IN'
+    ? 'Telugu in native Telugu script'
+    : 'simple English';
+
   const messages = [
     {
       role: 'system',
       content:
         `You are an expert AI interviewer conducting a voice interview for the role of ${jobTitle}. ` +
         `Generate exactly one interview question with focus: "${focus}". ` +
-        `Rules: max 30 words, spoken-friendly simple English (conversational Hinglish is acceptable), ` +
+        `Rules: max 30 words, spoken-friendly ${langInstruction}, ` +
         `never repeat an earlier question, no bullet points, no lists, conversational and clear. ` +
         `Respond with valid JSON only: { "question": "string" }`,
     },
@@ -101,6 +112,7 @@ async function evaluateAnswerAndNext(
   resumeText: string,
   previousTurns: Turn[],
   needsNextQuestion: boolean,
+  language: string,
 ): Promise<{
   score: number;
   feedback: string;
@@ -111,6 +123,16 @@ async function evaluateAnswerAndNext(
     .map((t, i) => `Q${i + 1}: ${t.question}\nAnswer: ${t.transcript ?? 'No answer'}`)
     .join('\n\n');
 
+  const langInstruction = language === 'hi-en'
+    ? 'spoken-friendly simple English (or conversational Hinglish in Roman script)'
+    : language === 'en-IN'
+    ? 'simple English'
+    : language === 'hi-IN'
+    ? 'Hindi in native Devanagari script'
+    : language === 'te-IN'
+    ? 'Telugu in native Telugu script'
+    : 'simple English';
+
   const messages = [
     {
       role: 'system',
@@ -118,8 +140,9 @@ async function evaluateAnswerAndNext(
         `You are an expert AI hiring interviewer. Evaluate the candidate's spoken answer to the current interview question for the role of ${jobTitle}. ` +
         `Judge substance, clarity, and relevance regardless of accent or conversational Hinglish. ` +
         (needsNextQuestion
-          ? `Also generate the next question with focus: "${nextFocus}". The next question must be max 30 words, spoken-friendly simple English (or Hinglish), conversational, no lists, never repeating previous questions. `
+          ? `Also generate the next question with focus: "${nextFocus}". The next question must be max 30 words, spoken-friendly ${langInstruction}, conversational, no lists, never repeating previous questions. `
           : `Since this was the 5th and final question, next_question must be null. `) +
+        `Keep feedback and summaries in English for the recruiter. ` +
         `Respond with valid JSON only: { "score": number (0-10), "feedback": string (max 200 chars), "criteria": { "relevance": number (0-10), "depth": number (0-10), "clarity": number (0-10) }, "next_question": string | null }`,
     },
     {
@@ -297,6 +320,7 @@ export default async function handler(req: any, res: any) {
   const resumeText = typeof app.resume_text === 'string' ? app.resume_text : '';
   const turns: Turn[] = Array.isArray(app.turns) ? app.turns : [];
   const usedFocuses = turns.map((t) => t.focus).filter(Boolean) as string[];
+  const language = typeof app.language === 'string' && ['en-IN', 'hi-en', 'hi-IN', 'te-IN'].includes(app.language.trim()) ? app.language.trim() : 'hi-en';
 
   // ── Action: 'start' ─────────────────────────────────────────────────────────
   if (action === 'start') {
@@ -308,6 +332,7 @@ export default async function handler(req: any, res: any) {
           question: lastTurn.question,
           index: turns.length,
           total: TOTAL_QUESTIONS,
+          language,
         });
       }
     }
@@ -318,7 +343,7 @@ export default async function handler(req: any, res: any) {
 
     // Generate first question
     const focus = pickFocus(usedFocuses);
-    const question = await generateFirstQuestion(focus, job.title, job.jd_text, resumeText);
+    const question = await generateFirstQuestion(focus, job.title, job.jd_text, resumeText, language);
     const newTurns: Turn[] = [...turns, { question, focus }];
 
     try {
@@ -334,6 +359,7 @@ export default async function handler(req: any, res: any) {
       question,
       index: newTurns.length,
       total: TOTAL_QUESTIONS,
+      language,
     });
   }
 
@@ -369,6 +395,7 @@ export default async function handler(req: any, res: any) {
       resumeText,
       turns.slice(0, lastIdx),
       needsNextQuestion,
+      language,
     );
 
     // Save answer & scores on the current turn

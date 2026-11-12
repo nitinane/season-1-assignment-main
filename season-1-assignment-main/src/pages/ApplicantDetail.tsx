@@ -55,6 +55,15 @@ function RecBadge({ rec }: { rec: string }) {
   );
 }
 
+function LangBadge({ lang }: { lang: string }) {
+  const label = lang === 'hi-en' ? 'Hinglish' : lang === 'en-IN' ? 'English' : lang === 'hi-IN' ? 'Hindi' : lang === 'te-IN' ? 'Telugu' : lang;
+  return (
+    <span style={{ background: 'rgba(91,94,244,0.08)', border: '1px solid rgba(91,94,244,0.2)', color: '#a5a8ff', padding: '3px 10px', borderRadius: 8, fontSize: 11, fontFamily: "'Geist Mono', monospace", letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+      {label || '—'}
+    </span>
+  );
+}
+
 function Chip({ text, variant }: { text: string; variant: 'match' | 'miss' }) {
   const style: React.CSSProperties = variant === 'match'
     ? { background: 'rgba(61,232,168,0.1)', border: '1px solid rgba(61,232,168,0.25)', color: '#3de8a8' }
@@ -149,7 +158,18 @@ export default function ApplicantDetail() {
 
   if (!data) return null;
 
-  const { candidate_name, email, job_title, job_location, resume_skills, ats, turns, overall, status, provider, created_at } = data;
+  const candidate_name: string = data.candidate_name ?? '—';
+  const email: string = data.email ?? '';
+  const job_title: string = data.job_title ?? '';
+  const job_location: string = data.job_location ?? '';
+  const resume_skills: string[] = Array.isArray(data.resume_skills) ? data.resume_skills : [];
+  const ats: { score?: number; matched_skills?: string[]; missing_skills?: string[]; summary?: string } | null = data.ats ?? null;
+  const turns: any[] | null = Array.isArray(data.turns) ? data.turns : [];
+  const overall: { interview_score?: number; recommendation?: string; summary?: string; strengths?: string[]; red_flags?: string[] } | null = data.overall ?? null;
+  const status: string = data.status ?? '';
+  const provider: string = data.provider ?? '';
+  const created_at: string = data.created_at ?? '';
+  const language: string = data.language ?? '';
 
   const providerLabel = provider === 'evon' ? 'Evon' : provider === 'groq' ? 'Llama via Groq' : provider || 'AI';
 
@@ -184,6 +204,7 @@ export default function ApplicantDetail() {
             </div>
           </div>
           {overall?.recommendation && <RecBadge rec={overall.recommendation} />}
+          {language && <LangBadge lang={language} />}
         </div>
       </div>
 

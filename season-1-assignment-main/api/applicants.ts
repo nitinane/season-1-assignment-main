@@ -36,7 +36,7 @@ export default async function handler(req: any, res: any) {
       const { data: app, error: appErr } = await db
         .from('iv_applications')
         .select(
-          'id, candidate_name, email, job_id, resume_skills, ats, turns, overall, status, provider, created_at'
+          'id, candidate_name, email, job_id, resume_skills, ats, turns, overall, status, provider, language, created_at'
         )
         .eq('id', id)
         .single();
@@ -76,6 +76,7 @@ export default async function handler(req: any, res: any) {
         overall: app.overall ?? null,
         status: app.status ?? '',
         provider: app.provider ?? '',
+        language: app.language ?? '',
         created_at: app.created_at,
       });
     } catch {
@@ -88,7 +89,7 @@ export default async function handler(req: any, res: any) {
     const { data: apps, error: listErr } = await db
       .from('iv_applications')
       .select(
-        'id, candidate_name, email, job_id, ats, overall, status, provider, created_at'
+        'id, candidate_name, email, job_id, ats, overall, status, provider, language, created_at'
       )
       .order('created_at', { ascending: false });
 
@@ -135,6 +136,7 @@ export default async function handler(req: any, res: any) {
         status: app.status ?? '',
         created_at: app.created_at,
         provider: app.provider ?? '',
+        language: app.language ?? '',
       };
     });
 

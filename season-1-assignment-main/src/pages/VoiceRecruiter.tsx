@@ -43,6 +43,15 @@ function RecBadge({ rec }: { rec: string }) {
   );
 }
 
+function LangBadge({ lang }: { lang: string }) {
+  const label = lang === 'hi-en' ? 'Hinglish' : lang === 'en-IN' ? 'English' : lang === 'hi-IN' ? 'Hindi' : lang === 'te-IN' ? 'Telugu' : lang;
+  return (
+    <span style={{ background: 'rgba(91,94,244,0.08)', border: '1px solid rgba(91,94,244,0.2)', color: '#a5a8ff', padding: '3px 10px', borderRadius: 9, fontSize: 11, fontFamily: "'Geist Mono', monospace", letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+      {label || '—'}
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const label =
     status === 'completed'   ? 'Completed' :
@@ -204,6 +213,7 @@ function ApplicantsTab({ passcode }: { passcode: string }) {
               <th style={{ ...mono, padding: '8px 12px', minWidth: 100 }}>ATS Score</th>
               <th style={{ ...mono, padding: '8px 12px', minWidth: 110 }}>Interview</th>
               <th style={{ ...mono, padding: '8px 12px' }}>Rec.</th>
+              <th style={{ ...mono, padding: '8px 12px' }}>Language</th>
               <th style={{ ...mono, padding: '8px 12px' }}>Status</th>
               <th style={{ ...mono, padding: '8px 12px' }}>Date</th>
               <th style={{ ...mono, padding: '8px 12px' }}></th>
@@ -211,12 +221,12 @@ function ApplicantsTab({ passcode }: { passcode: string }) {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px 12px' }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '32px 12px' }}>
                 <LoaderCircle size={22} color="var(--primary-brand)" style={{ animation: 'spin 1s linear infinite' }} />
               </td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px 12px', color: 'var(--outline)' }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '32px 12px', color: 'var(--outline)' }}>
                 No applicants yet.
               </td></tr>
             )}
@@ -235,6 +245,7 @@ function ApplicantsTab({ passcode }: { passcode: string }) {
                 <td style={{ padding: '10px 12px', color: 'var(--outline)' }}>{row.job_title || '—'}</td>
                 <td style={{ padding: '10px 12px', minWidth: 100 }}><ScoreBar value={row.ats_score} /></td>
                 <td style={{ padding: '10px 12px', minWidth: 110 }}><ScoreBar value={row.interview_score} /></td>
+                <td style={{ padding: '10px 12px' }}><LangBadge lang={row.language ?? ''} /></td>
                 <td style={{ padding: '10px 12px' }}><RecBadge rec={row.recommendation} /></td>
                 <td style={{ padding: '10px 12px' }}><StatusBadge status={row.status} /></td>
                 <td style={{ padding: '10px 12px', color: 'var(--outline)', fontFamily: "'Geist Mono', monospace", fontSize: 12 }}>{formatDate(row.created_at)}</td>

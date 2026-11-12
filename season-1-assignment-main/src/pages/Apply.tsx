@@ -3,6 +3,13 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Briefcase, MapPin, Sparkles, UploadCloud, LoaderCircle } from 'lucide-react';
 import { parsePDF } from '../lib/parser';
 
+const LANGUAGE_OPTIONS = [
+  { code: 'hi-en', label: 'Hinglish' },
+  { code: 'en-IN', label: 'English' },
+  { code: 'hi-IN', label: 'Hindi' },
+  { code: 'te-IN', label: 'Telugu' },
+] as const;
+
 interface JobDetails {
   id: string;
   title: string;
@@ -22,6 +29,7 @@ export default function Apply() {
   const [email, setEmail] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [consent, setConsent] = useState(false);
+  const [language, setLanguage] = useState<'hi-en' | 'en-IN' | 'hi-IN' | 'te-IN'>('hi-en');
 
   const [submitting, setSubmitting] = useState(false);
   const [parsingPdf, setParsingPdf] = useState(false);
@@ -145,6 +153,7 @@ export default function Apply() {
           email: trimmedEmail,
           resume_text: extractedText.trim(),
           consent: true,
+          language,
         }),
       });
 
@@ -398,6 +407,46 @@ export default function Apply() {
             <label htmlFor="consent-checkbox" style={{ fontSize: 12, color: 'var(--on-surface-muted, #cbd5e1)', lineHeight: 1.5, cursor: 'pointer' }}>
               I agree my resume and voice answers are processed by AI and shared with the recruiter
             </label>
+          </div>
+
+          {/* Language Selector */}
+          <div style={{ marginBottom: 22 }}>
+            <label
+              htmlFor="language-select"
+              style={{
+                display: 'block',
+                fontSize: 11,
+                fontFamily: "'Geist Mono', monospace",
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--outline, #94a3b8)',
+                marginBottom: 7,
+              }}
+            >
+              Interview Language *
+            </label>
+            <select
+              id="language-select"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as 'hi-en' | 'en-IN' | 'hi-IN' | 'te-IN')}
+              disabled={submitting}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 9,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: 'var(--on-surface, #fff)',
+                fontSize: 13,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <option key={opt.code} value={opt.code}>{opt.label}</option>
+              ))}
+            </select>
           </div>
 
           {error && (
